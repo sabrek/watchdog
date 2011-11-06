@@ -5,5 +5,9 @@
 
 import argparse, subprocess
 
+
 class Loop(object):
-    pass
+
+    def __init__(self, cmd):
+        self._command = cmd
+        self._files_to_watch = {}
