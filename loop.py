@@ -6,12 +6,40 @@
 import argparse, subprocess
 from os import getcwd, listdir, stat
 from os.path import exists
+from time import sleep
+
 
 class Loop(object):
 
     def __init__(self, cmd):
         self._command = cmd
         self._files_to_watch = {}
+
+    def _watchdog(self):
+        '''Check wheter any file in self._files_to_watch changed,
+        then fires self._command'''
+
+        check_file = lambda f: stat(f).st_mtime
+        files = self._files_to_watch
+
+        while True:
+            any_file_changed = False
+
+            # Check each file for st_mtime change (modification)
+            for f in files.keys():
+                actual_mtime = check_file(f)
+                if not files[f] == actual_mtime:
+                    any_file_changed = f
+                    files[f] = actual_mtime
+
+            if any_file_changed:
+                # run command
+                print('File: \'{}\' changed since last check.'\
+                        .format(any_file_changed))
+                subprocess.call(self._command)
+
+            # sleep before next check
+            sleep(0.5)
 
     def _set_files_to_watch(self, files):
         '''Process args files wheter they exists and include current directory
@@ -56,5 +84,8 @@ class Loop(object):
         args = parser.parse_args()
 
         self._set_files_to_watch(args.files)
+
+        print('Started watching...')
+        self._watchdog()
 
 
