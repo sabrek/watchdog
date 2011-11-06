@@ -8,6 +8,8 @@ from os import getcwd, listdir, stat
 from os.path import exists
 from time import sleep
 
+__all__ = ["Loop"]
+
 
 class Loop(object):
 
@@ -89,3 +91,5 @@ class Loop(object):
         self._watchdog()
 
 
+if __name__ == '__main__':
+    pass
