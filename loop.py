@@ -24,8 +24,9 @@ class Loop(object):
         check_file = lambda f: stat(f).st_mtime
         files = self._files_to_watch
 
+        any_file_changed = False
+
         while True:
-            any_file_changed = False
 
             # Check each file for st_mtime change (modification)
             for f in files.keys():
@@ -38,6 +39,7 @@ class Loop(object):
                 # run command
                 print('File: \'{}\' changed since last check.'\
                         .format(any_file_changed))
+                any_file_changed = False
                 subprocess.call(self._command)
 
             # sleep before next check
