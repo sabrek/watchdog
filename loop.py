@@ -2,13 +2,31 @@
 
 # Author: Jacek 'Sabr' Karolak (j.karolak@sabr.pl)
 # Watch [files] for change, and after every change run given [command]
+#
+#
+# Example watchdog script: safari.py
+#  #!/usr/bin/env python
+#  # -*- coding: utf-8 -*-
+#
+#  from loop import Loop
+#
+#  if __name__ == "__main__":
+#      Loop(["osascript", "-e", """tell application "Safari"
+#              do JavaScript "window.location.reload()" in front document
+#          end tell"""]).run()
+#   EOF
+#
+# Make safari.py executable (chmox +x safari.py) or use it with python.
+# python safari.py FILES_TO_WATCH
+# Whenever FILES_TO_WATCH change, refresh Safari in background :-)
+#
+
+__all__ = ["Loop"]
 
 import argparse, subprocess
 from os import getcwd, listdir, stat
 from os.path import exists
 from time import sleep
-
-__all__ = ["Loop"]
 
 
 class Loop(object):
@@ -19,7 +37,7 @@ class Loop(object):
 
     def _watchdog(self):
         '''Check wheter any file in self._files_to_watch changed,
-        then fires self._command'''
+        if so fire self._command'''
 
         check_file = lambda f: stat(f).st_mtime
         files = self._files_to_watch
@@ -50,8 +68,8 @@ class Loop(object):
         content if requested.'''
         if '.' in files:
             files.remove('.')
-            # combine alle other files with current working directory content
-            # without dot files
+            # combine all other given files with current working directory
+            # content, without dot files
             files += [f for f in listdir(getcwd())\
                     if not f.startswith('.')]
 
@@ -61,8 +79,8 @@ class Loop(object):
         # check rights (in order to perform system stat) and wheter they exist
         for f in files:
             if not exists(f):
-                msg = 'file \'{}\' does not exists, or I don\'t have access rights.'\
-                        .format(f)
+                msg = 'file \'{}\' does not exists, or I don\'t\
+                        have access rights.'.format(f)
                 raise IOError(msg)
 
         # save files to watch in instance variable
