@@ -8,10 +8,10 @@
 #  #!/usr/bin/env python
 #  # -*- coding: utf-8 -*-
 #
-#  from loop import Loop
+#  from watchdog import Watchdog
 #
 #  if __name__ == "__main__":
-#      Loop(["osascript", "-e", """tell application "Safari"
+#      Watchdog(["osascript", "-e", """tell application "Safari"
 #              do JavaScript "window.location.reload()" in front document
 #          end tell"""]).run()
 #   EOF
@@ -21,7 +21,7 @@
 # Whenever FILES_TO_WATCH change, refresh Safari in background :-)
 #
 
-__all__ = ["Loop"]
+__all__ = ["Watchdog"]
 
 import argparse, subprocess
 from os import getcwd, listdir, stat
@@ -29,36 +29,26 @@ from os.path import exists
 from time import sleep
 
 
-class Loop(object):
+class Watchdog(object):
 
     def __init__(self, cmd):
         self._command = cmd
-        self._files_to_watch = {}
+        self._files_to_watch = set()
+        self._file_modification_times = {}
 
     def _watchdog(self):
         '''Check wheter any file in self._files_to_watch changed,
         if so fire self._command'''
 
-        check_file = lambda f: stat(f).st_mtime
-        files = self._files_to_watch
-
-        any_file_changed = False
-
         while True:
 
-            # Check each file for st_mtime change (modification)
-            for f in files.keys():
-                actual_mtime = check_file(f)
-                if not files[f] == actual_mtime:
-                    any_file_changed = f
-                    files[f] = actual_mtime
+            new_modification_times = dict((fn, stat(fn).st_mtime)\
+                    for fn in self._files_to_watch)
 
-            if any_file_changed:
-                # run command
-                print('File: \'{}\' changed since last check.'\
-                        .format(any_file_changed))
-                any_file_changed = False
+            if new_modification_times != self._file_modification_times:
+                self._file_modification_times = new_modification_times
                 subprocess.call(self._command)
+                print('Modificaton in files noticed...')
 
             # sleep before next check
             sleep(0.5)
@@ -70,25 +60,14 @@ class Loop(object):
             files.remove('.')
             # combine all other given files with current working directory
             # content, without dot files
-            files += [f for f in listdir(getcwd())\
-                    if not f.startswith('.')]
+            files += [f for f in listdir(getcwd()) if not f.startswith('.')]
 
         # make f list unique
-        files = set(files)
-
-        # check rights (in order to perform system stat) and wheter they exist
-        for f in files:
-            if not exists(f):
-                msg = 'file \'{}\' does not exists, or I don\'t\
-                        have access rights.'.format(f)
-                raise IOError(msg)
-
-        # save files to watch in instance variable
-        self._files_to_watch = dict.fromkeys(files)
+        self._files_to_watch = set(files)
 
         # set modification times
-        for file_key in self._files_to_watch.keys():
-            self._files_to_watch[file_key] = stat(file_key).st_mtime
+        for fn in self._files_to_watch:
+            self._file_modification_times[fn] = stat(fn).st_mtime
 
 
     def run(self):
@@ -110,6 +89,3 @@ class Loop(object):
         print('Started watching...')
         self._watchdog()
 
-
-if __name__ == '__main__':
-    pass
